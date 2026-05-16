@@ -39,3 +39,13 @@ FMP_HOUSE_LATEST = f"{FMP_BASE}/house-latest"
 
 SEC_SEARCH_URL = "https://efts.sec.gov/LATEST/search-index"
 SEC_ARCHIVE_BASE = "https://www.sec.gov/Archives/edgar/data"
+
+EDINET_API_KEY = os.environ.get("EDINET_API_KEY", "").strip()
+EDINET_DOCS_URL = "https://api.edinet-fsa.go.jp/api/v2/documents.json"
+EDINET_DOC_URL = "https://disclosure2.edinet-fsa.go.jp/WEEK0010.aspx"
+EDINET_LOOKBACK_DAYS = int(os.environ.get("ALERTS_EDINET_LOOKBACK_DAYS", "3"))
+
+DART_API_KEY = os.environ.get("DART_API_KEY", "").strip()
+DART_LIST_URL = "https://opendart.fss.or.kr/api/list.json"
+DART_DOC_URL_BASE = "https://dart.fss.or.kr/dsaf001/main.do"
+DART_LOOKBACK_DAYS = int(os.environ.get("ALERTS_DART_LOOKBACK_DAYS", "3"))

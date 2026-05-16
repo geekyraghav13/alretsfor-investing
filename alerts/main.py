@@ -10,7 +10,7 @@ import time
 
 from .config import LOG_PATH, POLL_INTERVAL_SECONDS
 from .notifier import LogOnlyNotifier, Notifier, default_notifier
-from .sources import congress, sec_13d
+from .sources import congress, japan_edinet, korea_dart, sec_13d
 from .storage import init_db
 
 log = logging.getLogger("alerts")
@@ -32,14 +32,11 @@ def setup_logging() -> None:
 
 def run_once(notifier: Notifier) -> None:
     log.info("==== poll start ====")
-    try:
-        congress.run(notifier)
-    except Exception as e:
-        log.exception("congress source failed: %s", e)
-    try:
-        sec_13d.run(notifier)
-    except Exception as e:
-        log.exception("sec_13d source failed: %s", e)
+    for source in (congress, sec_13d, japan_edinet, korea_dart):
+        try:
+            source.run(notifier)
+        except Exception as e:
+            log.exception("%s failed: %s", source.__name__, e)
     log.info("==== poll done ====")
 
 
