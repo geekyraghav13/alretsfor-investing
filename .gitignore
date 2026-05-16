@@ -1,0 +1,10 @@
+.env
+.env.local
+state/
+logs/
+.venv/
+__pycache__/
+*.pyc
+*.sqlite
+*.sqlite-journal
+.DS_Store
