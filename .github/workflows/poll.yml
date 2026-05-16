@@ -1,0 +1,72 @@
+name: trading-alerts-poll
+
+on:
+  schedule:
+    # Every 15 minutes. GitHub may delay free-tier crons by 5-15 min under load.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:  # allow manual trigger from the Actions tab
+
+concurrency:
+  group: trading-alerts-poll
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: write  # required for the cache restore/save
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Restore alert state (SQLite dedup table)
+        id: restore-state
+        uses: actions/cache/restore@v4
+        with:
+          path: state
+          key: alerts-state-${{ github.run_id }}
+          restore-keys: |
+            alerts-state-
+
+      - name: Prime dedup (first run only, suppresses backfill flood)
+        if: steps.restore-state.outputs.cache-matched-key == ''
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: |
+          echo "First run detected — priming dedup table without sending alerts."
+          python -m alerts.main --once --log-only
+
+      - name: Poll sources, send alerts
+        if: steps.restore-state.outputs.cache-matched-key != ''
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m alerts.main --once
+
+      - name: Save alert state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state
+          key: alerts-state-${{ github.run_id }}
+
+      - name: Upload logs (for debugging failures)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alerts-log
+          path: logs/
+          retention-days: 3
